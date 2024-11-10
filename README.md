@@ -1,8 +1,8 @@
-# Project 6: Huffman Coding/Compression
+# Project 6: Huffman Coding/Compression, Fall 2024
 
 See the [details document](docs/details.md) for information on using Git, starting the project, and more details about the project including information about the classes and concepts that are outlined briefly below. You'll absolutely need to read the information in the details document to understand how the classes in this project work independently and together. The details document also contains project-specific details. This current document provides a high-level overview of the assignment.
 
-You are STRONGLY encouraged to work with a partner on 6! (as you were on P5 and will be on P7). See the [details document](docs/details.md) for information on using Git with a partner and how the workflow can proceed. If you'd like to be paired (somewhat randomly, but you can write about yourself or a partner) then fill out [this form](https://forms.office.com/r/qpLBLV6ZPs) to request a pairing.
+You are STRONGLY encouraged to work with a partner on 6! (as you were on P5 and will be on P7). See the [details document](docs/details.md) for information on using Git with a partner and how the workflow can proceed. If you'd like to be paired (somewhat randomly, but you can write about yourself or a partner) then fill out [this form](https://forms.office.com/r/GTJWbG8Eyn) to request a pairing.
 
 
 ## Outline 
@@ -41,11 +41,11 @@ Once you understand the Huffman coding algorithm, you should review this section
 
 ### Running Starter Code (with incomplete `HuffProcessor.decompress`)
 
-**Run `HuffMainDecompress`**. This prompts for a file to decompress, then calls `HuffProcessor.decompress`. You're given a stub version of that method; it initially ***simply copies the first file to another file***, it doesn’t actually decompress it. To make sure you know how to use this program, we recommend you run the program as you cloned it and as described below.
+**Run `HuffMainDecompress`**. This prompts for a file to decompress, then calls `HuffProcessor.decompress`. You're given a stub version of that method; it initially ***simply copies the first file to another file***, it doesn’t actually decompress it. To make sure you know how to use this program, we recommend you run the program as you fork/cloned it and as described below.
 
 Choose `mystery.tif.hf` from the data folder to decompress (the `.hf` suffix indicates this has been compressed by a working `HuffProcessor.compress`). When prompted with a name for the file to save, use a `UHF prefix`, i.e., save with the name `UFHmystery.tif.uhf (that suffix is the default).  
 
-Then run `diff` on the command line/terminal (see [the details doc](docs/details.md) for information on using `diff`). Use diff to compare two files: the original, `mystery.tif.hf` and the uncompressed version: `UHFmystery.tif.uhf`. The `diff` program should _say_ these files are the same. This is because the code you first get from git simply copies the first file to another file, it doesn't actually decompress it. **You will use `diff` to check whether your implementation is working correctly locally, there are no JUnit tests for this project.**
+Then run `diff` on the command line/terminal (see [the details doc](docs/details.md) for information on using `diff`). Use diff to compare two files: the original, `mystery.tif.hf` and the uncompressed version: `UHFmystery.tif.uhf`. The `diff` program should _indicate_ these files are the same. This is because the code you first get from git simply copies the first file to another file, it doesn't actually decompress it. **You will use `diff` to check whether your implementation is working correctly locally, there are no JUnit tests for this project.**
 
 The main takeaways here in running before implementing `HuffProcess.decompress` are to 
 - Understand what to run when decompressing.
@@ -55,7 +55,7 @@ The main takeaways here in running before implementing `HuffProcess.decompress` 
 
 ## Part 1: Implementing `HuffProcessor.decompress`
 
-You should begin programming by implementing `decompress` first before moving on to `compress`. You'll remove the code you're given intially in `HuffProcessor.decompress` and implement code to actually **decompress** as described in this section. You **must remember to close the output file** before `decompress` returns. The call `out.close` is in the code you're given, be sure it's in the code you write as well.
+You should begin programming by implementing `decompress` first before moving on to `compress`. You'll remove the code you're given intially in `HuffProcessor.decompress` and implement code to actually **decompress** as described in this section. You **must remember to close the output file** before `decompress` returns. The call `out.close()` is in the code you're given, be sure it's in the code you write as well.
 
 There are four conceptual steps in decompressing a file that has been compressed using Huffman coding:
 1. Read the 32-bit "magic" number as a check on whether the file is Huffman-coded (see lines 150-153 below)
