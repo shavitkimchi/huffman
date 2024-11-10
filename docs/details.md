@@ -1,4 +1,4 @@
-# Details for P6 Huffman Coding
+# Details for P6 Huffman Coding in Fall 2024
 
 ## Starter Code and Using Git
 **_You should have installed all software (Java, Git, VS Code) before completing this project._** You can find the [directions for installation here](https://coursework.cs.duke.edu/201fall23/resources-201/-/blob/main/installingSoftware.md) (including workarounds for submitting without Git if needed).
@@ -66,7 +66,17 @@ Once you are in the same folder as the files you would like to compare, you can 
 
 If the files are the same _nothing is printed_. If the files are different there's an indication of where they are different for text files, and just `different` if the files are binary/compressed/image files. For your purposes in P5 it isn't especially crucial that you understand the output printed by `diff` - generally you will just want to check if a decompressed file is exactly same as the original file before any compression/decompression.
 
-## Outline of decompress method
+# Outline of decompress method
+
+There are four conceptual steps in decompressing, outlined in text and code below. These are a useful source as you write code to decompress.
+
+1. Read the 32-bit "magic" number as a check on whether the file is Huffman-coded (see lines 150-153 below)
+2. Read the tree used to decompress, this is the same tree that was used to compress, i.e., was written during compression (helper method call on line 154 below).
+3. Read the bits from the compressed file and use them to traverse root-to-leaf paths, writing leaf values to the output file. Stop when finding `PSEUDO_EOF` (hidden while loop on lines 156-174 below).
+4. Close the output file (line 175 below).
+
+We recommend using the code found below as a base/basis for your decompress method because it illustrates how to use the bit-stream classes and how to throw appropriate exceptions. However, you will not be penalized if you use an alternative method to code decompression.
+
 
 <div align="center">
   <img width="837" height="254" src="p6-figures/decompress.png">
@@ -77,7 +87,7 @@ To understand this in more detail, please review the explanation in the [Huffman
 
 As you can see in the example above, a `HuffException` is thrown if the file of compressed bits does not start with the 32-bit value `HUFF_TREE`. Your code should also throw a `HuffException` if reading bits ever fails, i.e., the `readBits` method returns -1. That could happen in the helper methods when reading the tree and when reading the compressed bits.
 
-### Reading the Tree (private HuffNode readTree)
+## Reading the Tree (private HuffNode readTree)
 
 Reading the tree using a helper method is essentially required since reading the tree, stored using a pre-order traversal, is much simpler with recursion. You don't have to use the names or parameters described above, though you can.
 In the _201 Huffman Compression Protocol_, interior tree nodes are indicated by the single bit 0 and leaf nodes are indicated by the single bit 1. No bits/values are written after the `0` for internal nodes and a 9-bit value is written after the `1` for a leaf node. 
@@ -102,7 +112,7 @@ private HuffNode readTree(BitInputStream in) {
 
 For example, the tree below corresponds to the bit sequence `0001X1Y01Z1W01A1B`, with each letter representing a 9-bit sequence to be stored in a leaf as shown in the tree to the right. You'll read these 9-bit chunks with an appropriate call of `readBits`. Rather than use 9, you should use `BITS_PER_WORD + 1`, the +1 is needed since one leaf stores `PSEUDO_EOF` so all leaf nodes store a 9-bit value. See the [appendix](#appendix-how-the-tree-in-decompress-was-generated) for a detailed explanation on how this tree was constructed.
 
-#### Example Tree
+### Example Tree
 
 <div align="center">
   <img width="291" height="213" src="p6-figures/huffheadtreeNODES.png">
@@ -115,7 +125,7 @@ Once you've read the bit sequence representing the tree, you'll read the remaini
 
 The pseudocode from the [Huffman coding writeup](https://www.cs.duke.edu/csed/poop/huff/info/)  is reproduced in the section below, this is the same code shown in that document -- it's not perfect Java, hence pseudocode. (Note: you break when reaching `PSEUDO_EOF`, and then no bits are written to the output file. Otherwise, when writing a value stored in a leaf to the output stream, you write 8, or `BITS_PER_WORD` bits).
 
-#### pseudocode example to decompress with tree
+### pseudocode example to decompress with tree
 
 ``` java
   HuffNode current = root; 
@@ -140,6 +150,89 @@ The pseudocode from the [Huffman coding writeup](https://www.cs.duke.edu/csed/po
   }
   close output file
 ```
+
+# Outline of compress method
+
+There are five basic steps to compress a file that can then be decompressed using your already written decompress code.
+
+1. Determine the frequency of every eight-bit character/chunk in the file being compressed (see line 78 below).
+2. From the frequencies, create the Huffman trie/tree used to create encodings greedily (see line 79 below).
+3. From the trie/tree, create the encodings for each eight-bit character chunk (see lines 83-84 below).
+4. Write the magic number and the tree to the beginning/header of the compressed file (see lines 81-82 below).
+5. Read the file again and write the encoding for each eight-bit chunk, followed by the encoding for PSEUDO_EOF, then close the file being written (not shown).
+
+You won't need to throw exceptions for the steps outlined. A brief description of each step follows. More details can be found in the explanation of the Huffman algorithm in the [Huffman coding writeup](https://www.cs.duke.edu/csed/poop/huff/info/).
+
+<div align="center">
+  <img width="600" height="180" src="p6-figures/newcompress.png">
+</div>
+
+## Determining Frequencies (private int[] getCounts)
+
+Create an integer array that can store 256 values (use `ALPH_SIZE`). You'll read 8-bit characters/chunks, (using `BITS_PER_WORD` rather than 8), and use the read/8-bit value as an index into the array, incrementing the frequency. Conceptually this is a map from 8-bit chunk to an `int` frequency for that chunk, it's easy to use an array for this, mapping the index to the number of times the index occurs, e.g., `counts['a']` is the number of times 'a' occurs in the input file being compressed. The code you start with in compress (and decompress) illustrates how to read until the sentinel -1 is read to indicate there are no more bits in the input stream. 
+
+## Making Huffman Trie/Tree (private HuffNode makeTree)
+
+You'll use a greedy algorithm and a `PriorityQueue` of `HuffNode` objects to create the trie. Since `HuffNode` implements `Comparable` (using weight), the code you write will remove the minimal-weight nodes when `pq.remove()` is called as shown in the pseudocode included in the section below.
+
+### makeTree pseudocode
+
+``` java
+PriorityQueue<HuffNode> pq = new PriorityQueue<>();
+for(every index such that freq[index] > 0) {
+    pq.add(new HuffNode(index,freq[index],null,null));
+}
+pq.add(new HuffNode(PSEUDO_EOF,1,null,null)); // account for PSEUDO_EOF having a single occurrence
+
+while (pq.size() > 1) {
+   HuffNode left = pq.remove();
+   HuffNode right = pq.remove();
+   // create new HuffNode t with weight from
+   // left.weight+right.weight and left, right subtrees
+   pq.add(t);
+}
+HuffNode root = pq.remove();
+return root;
+```
+
+You'll need to ***be sure that `PSEUDO_EOF` is represented in the tree. *** As shown above, you should only add nodes to the priority queue for indexes/8-bit values that occur, i.e., that have non-zero weights.
+
+
+## Make Codings from Trie/Tree (private makeEncodings)
+
+For this, you'll essentially implement a recursive helper method, similar to code you've seen in discussion for the [LeafTrails APT problem](https://www2.cs.duke.edu/csed/newapt/leaftrails.html). As shown in the example of compress above, this method populates an array of Strings such that `encodings[val]` is the encoding of the 8-bit chunk val. See the debugging runs at the end of this write-up for details. As with the LeafTrails APT, the recursive helper method will have the array of encodings as one parameter, a node that's the root of a subtree as another parameter, and a string that's the path to that node as a string of zeros and ones. The first call of the helper method might be as shown, e.g., in the helper method `makeEncodings`.
+``` java
+    String[] encodings = new String[ALPH_SIZE + 1];
+    makeEncodings(root,"",encodings);
+```
+
+In this method, if the `HuffNode` parameter is a leaf (recall that a leaf node has no left or right child), an encoding for the value stored in the leaf is added to the array, e.g.,
+``` java
+   if (isLeaf(root)) {
+        encodings[root.value] = path;
+        return;
+   }
+```
+If the root is not a leaf, you'll need to make recursive calls adding "0" to the end of the path when making a recursive call on the left subtree and adding "1" to the end of the path when making a recursive call on the right subtree. Every node in a Huffman tree has two children. ***Be sure that you only add a single "0" for left-call and a single "1" for right-call. Each recursive call has a String path that's one more character than the parameter passed, e.g., path + "0" and path + "1".***
+
+## Writing the Tree (private void writeTree)
+
+Writing the tree is similar to the code you wrote to read the tree when decompressing. If a node is an internal node, i.e., not a leaf, write a single bit of zero. Else, if the node is a leaf, write a single bit of one, followed by _nine bits_ of the value stored in the leaf.  This is a pre-order traversal: write one bit for the node, then make two recursive calls if the node is an internal node. No recursion is used for leaf nodes. You'll need to write 9 bits, or `BITS_PER_WORD + 1`, because there are 257 possible values including `PSEUDO_EOF`.
+
+## Writing Compressed Bits
+
+After writing the tree, you'll need to read the file being compressed one more time. As shown above, the ***`BitInputStream` is reset, then read again to compress it***. The first reading was to determine frequencies of every 8-bit chunk. The encoding for each 8-bit chunk read is stored in the array created when encodings were made from the tree. These encodings are stored as strings of zeros and ones, e..g., "010101110101". To convert such a string to a bit-sequence you can use `Integer.parseInt` specifying a radix, or base of two. For example, to write the encoding for the 8-bit chunk representing 'A', which has an ASCII value of 65, you'd use:
+``` java
+    String code = encoding['A']
+    out.writeBits(code.length(), Integer.parseInt(code,2));
+```
+You'll use code like this for every 8-bit chunk read from the file being compressed. You must also write the bits that encode `PSEUDO_EOF`, i.e.,
+``` java
+    String code = encoding[PSEUDO_EOF]
+    out.writeBits(code.length(), Integer.parseInt(code,2));
+```
+You'll write these bits _after_ writing the bits for every 8-bit chunk. The encoding for `PSEUDO_EOF` is used when decompressing, ***so you'll need to write the encoding bits before the output file is closed.***
+
 
 # Appendix: How the Tree in `decompress` was generated
 
