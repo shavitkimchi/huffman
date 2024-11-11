@@ -73,7 +73,7 @@ There are five conceptual steps to compress a file using Huffman coding. You do 
 - Read the input file again, writing encodings, including `PSEUDO_EOF`
 
 
-**See the [appendix section in the details.md](docs/details.md) file for important informatoon on understanding this compression algorithm.
+**See the [appendix section in the details.md](docs/details.md) file for important information on understanding this compression algorithm.
 
 ## Analysis
 
