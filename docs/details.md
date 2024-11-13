@@ -218,7 +218,7 @@ If the root is not a leaf, you'll need to make recursive calls adding "0" to the
 
 ## Writing the Tree (private void writeTree)
 
-Writing the tree is similar to the code you wrote to read the tree when decompressing. If a node is an internal node, i.e., not a leaf, write a single bit of zero. Else, if the node is a leaf, write a single bit of one, followed by _nine bits_ of the value stored in the leaf.  This is a pre-order traversal: write one bit for the node, then make two recursive calls if the node is an internal node. No recursion is used for leaf nodes. You'll need to write 9 bits, or `BITS_PER_WORD + 1`, because there are 257 possible values including `PSEUDO_EOF`.
+Writing the tree is similar to the code you wrote to read the tree when decompressing. If a node is an internal node, i.e., not a leaf, write a single bit of zero and then make two recursive calls as part of the pre-order traversal. Otherwise, if the node is a leaf, write a single bit of one, followed by _nine bits_ of the value stored in the leaf.  This is a pre-order traversal: write one bit for the node, then make two recursive calls if the node is an internal node. No recursion is used for leaf nodes. You'll need to write 9 bits, or `BITS_PER_WORD + 1`, because there are 257 possible values including `PSEUDO_EOF`. To be safe, you should write nothing if the `HuffNode` parameter to `writeTree` is `null`, but this will not happen in practice since each internal node has two children.
 
 ## Writing Compressed Bits
 
