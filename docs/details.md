@@ -165,12 +165,12 @@ There are five basic steps to compress a file that can then be decompressed usin
 You won't need to throw exceptions for the steps outlined. A brief description of each step follows. More details can be found in the explanation of the Huffman algorithm in the [Huffman coding writeup](https://www.cs.duke.edu/csed/poop/huff/info/).
 
 <div align="center">
-  <img width="600" height="180" src="p6-figures/newcompress.png">
+  <img width="600" height="180" src="p6-figures/compresscode.png">
 </div>
 
 ## Determining Frequencies (private int[] getCounts)
 
-Create an integer array that can store 256 values (use `ALPH_SIZE`). You'll read 8-bit characters/chunks, (using `BITS_PER_WORD` rather than 8), and use the read/8-bit value as an index into the array, incrementing the frequency. Conceptually this is a map from 8-bit chunk to an `int` frequency for that chunk, it's easy to use an array for this, mapping the index to the number of times the index occurs, e.g., `counts['a']` is the number of times 'a' occurs in the input file being compressed. The code you start with in compress (and decompress) illustrates how to read until the sentinel -1 is read to indicate there are no more bits in the input stream. 
+Create an integer array that can store 256 values (use `ALPH_SIZE`). You'll read 8-bit characters/chunks, (using `BITS_PER_WORD` rather than 8), and use the read/8-bit value as an index into the array, incrementing the frequency of that 8-bit chunk. Conceptually this is a map from 8-bit chunk to an `int` frequency for that chunk, it's easy to use an array for this, mapping the index to the number of times the index occurs, e.g., `counts['a']` is the number of times 'a' occurs in the input file being compressed. The code you start with in compress (and decompress) illustrates how to read until the sentinel -1 is read to indicate there are no more bits in the input stream. 
 
 ## Making Huffman Trie/Tree (private HuffNode makeTree)
 
@@ -196,12 +196,12 @@ HuffNode root = pq.remove();
 return root;
 ```
 
-You'll need to ***be sure that `PSEUDO_EOF` is represented in the tree. *** As shown above, you should only add nodes to the priority queue for indexes/8-bit values that occur, i.e., that have non-zero weights.
+You'll need to ***be sure that `PSEUDO_EOF` is represented in the tree. *** As shown above, you should only add nodes to the priority queue for indexes/8-bit values that occur, i.e., that have non-zero frequencies/weights.
 
 
 ## Make Codings from Trie/Tree (private makeEncodings)
 
-For this, you'll essentially implement a recursive helper method, similar to code you've seen in discussion for the [LeafTrails APT problem](https://www2.cs.duke.edu/csed/newapt/leaftrails.html). As shown in the example of compress above, this method populates an array of Strings such that `encodings[val]` is the encoding of the 8-bit chunk val. See the debugging runs at the end of this write-up for details. As with the LeafTrails APT, the recursive helper method will have the array of encodings as one parameter, a node that's the root of a subtree as another parameter, and a string that's the path to that node as a string of zeros and ones. The first call of the helper method might be as shown, e.g., in the helper method `makeEncodings`.
+For this, you'll essentially implement a recursive helper method, similar to code for the [LeafTrails APT problem](https://www2.cs.duke.edu/csed/newapt/leaftrails.html). As shown in the example code for compress above, this method populates an array of Strings such that `encodings[val]` is the zero-one encoding of the 8-bit chunk val. The recursive helper method will have the array of encodings as one parameter, a node that's the root of a subtree as another parameter, and a string that's the path to that node as a string of zeros and ones. The first call of the helper method might be as shown, e.g., in the helper method `makeEncodings`.
 ``` java
     String[] encodings = new String[ALPH_SIZE + 1];
     makeEncodings(root,"",encodings);
@@ -218,16 +218,17 @@ If the root is not a leaf, you'll need to make recursive calls adding "0" to the
 
 ## Writing the Tree (private void writeTree)
 
-Writing the tree is similar to the code you wrote to read the tree when decompressing. If a node is an internal node, i.e., not a leaf, write a single bit of zero and then make two recursive calls as part of the pre-order traversal. Otherwise, if the node is a leaf, write a single bit of one, followed by _nine bits_ of the value stored in the leaf.  This is a pre-order traversal: write one bit for the node, then make two recursive calls if the node is an internal node. No recursion is used for leaf nodes. You'll need to write 9 bits, or `BITS_PER_WORD + 1`, because there are 257 possible values including `PSEUDO_EOF`. To be safe, you should write nothing if the `HuffNode` parameter to `writeTree` is `null`, but this will not happen in practice since each internal node has two children.
+Writing the tree is similar to the code you wrote to read the tree when decompressing. If a node is an internal node, i.e., not a leaf, write a single bit of zero and then make two recursive calls as part of the pre-order traversal. Otherwise, if the node is a leaf, write a single bit of one, followed by _nine bits_ of the value stored in the leaf.  This is a pre-order traversal: write one bit for the node, then make two recursive calls if the node is an internal node. **No recursion is used for leaf nodes.** You'll need to write 9 bits, or `BITS_PER_WORD + 1`, because there are 257 possible values including `PSEUDO_EOF`. To be safe, you should write nothing if the `HuffNode` parameter to `writeTree` is `null`, but this will not happen in practice since each internal node has two children.
 
 ## Writing Compressed Bits
 
-After writing the tree, you'll need to read the file being compressed one more time. As shown above, the ***`BitInputStream` is reset, then read again to compress it***. The first reading was to determine frequencies of every 8-bit chunk. The encoding for each 8-bit chunk read is stored in the array created when encodings were made from the tree. These encodings are stored as strings of zeros and ones, e..g., "010101110101". To convert such a string to a bit-sequence you can use `Integer.parseInt` specifying a radix, or base of two. For example, to write the encoding for the 8-bit chunk representing 'A', which has an ASCII value of 65, you'd use:
+After writing the tree, you'll need to read the file being compressed one more time. As shown above, the ***`BitInputStream` is reset, then all the 8-bit chunks are read again to compress it***. The first reading was to determine frequencies of every 8-bit chunk. The encoding for each 8-bit chunk read is stored in the array created when encodings were made from the tree. These encodings are stored as strings of zeros and ones, e..g., "010101110101". To convert such a string to a bit-sequence you can use `Integer.parseInt` specifying a radix, or base of two. For example, to write the encoding for the 8-bit chunk representing 'A', which has an ASCII value of 65, you'd use:
 ``` java
     String code = encoding['A']
     out.writeBits(code.length(), Integer.parseInt(code,2));
 ```
-You'll use code like this for every 8-bit chunk read from the file being compressed. You must also write the bits that encode `PSEUDO_EOF`, i.e.,
+You'll use code like this for every 8-bit chunk read from the file being compressed. 
+**You must also write the bits that encode `PSEUDO_EOF`, i.e.,**
 ``` java
     String code = encoding[PSEUDO_EOF]
     out.writeBits(code.length(), Integer.parseInt(code,2));
@@ -245,5 +246,4 @@ A 9-bit sequence represents a "character"/chunk stored in each leaf. This charac
 
 When you read the first 0, you know it's an internal node (it's a 0), you'll create an internall `HuffNode` node, and recursively read the left and right subtrees. The left subtree call will read the bits 001X1Y01Z1W as the left subtree of the root and the right subtree recursive call will read  01A1B as the right subtree. Note that in the bit-sequence representing the tree, a single bit of 0 and 1 differentiates INTERNAL nodes from LEAF nodes, not the left/right branch taken in uncompressing -- that comes later. The internal node that's the root of the left subtree of the overall root has its own left subtree of 01X1Y and a right subtree of 01Z1W. When you read the single 1-bit, your code will need to read 9-bits to obtain the value stored in the leaf.
 
-</details>
 
