@@ -85,7 +85,14 @@ It's not easy to debug when reading/writing bits at a time. You may choose to wr
 
 **See the [appendix section in the details.md](docs/details.md) file for important information on understanding this compression algorithm.
 
+## Exceptions
+
+See the [details document](docs/details.md) for when to throw a `HuffException`. Basically, every time you call `readBits` on a `BitOutputStream` object you should check that the read operation succeeds, i.e., that the value -1 is **NOT** returned by the
+call of `readBits`. You throw a `new HuffException` with an appropriate String of where in the code the read fails.
+
 ## Analysis
+
+Use the [template linked here](https://courses.cs.duke.edu/compsci201/fall24/assign/p6-huffman-analysis.docx) to create a PDF to upload to Gradescope with answers to analysis questions.
 
 You'll submit the analysis as a PDF separate from the code in Gradescope. If you are working with a partner, you and your partner should submit a single analysis document.
 
@@ -97,7 +104,7 @@ Note that running the `HuffMainCompress` and `HuffMainDecompress` programs will 
 
 **Question 2.** Typically the number of total characters  $`N`$ is much greater than the number of unique characters, $`M`$ which is at most 256 when reading 8-bit chunks as with Huffman coding. Files are read twice when compressing: once to count/determine encodings, and once to actually write the encodings. Run your compression code on two images from the `data` folder: `oak-ridge.jpg` and `mtblanc.jpg`. In your analysis, include the time it takes to compress each of these files, what the compression ratio is: size of original/size of compressed. Do the same for the text file `hawthorne.txt` Can you make any conclusions about compression of images compared to text files? About the time to run compression on files? Discuss and justify your answers based on empirical/runtime data. 
 
-**Question 3.** When running `decompress`, each character that is decompressed requires traversing nodes in the Huffman coding tree, and there are $`N`$ such characters. Run your `decompress` code on the images you compressed in the previous question. Make some conclusions about the runtimes of compressed images compared to compressed text files when decompressing? Justify your answers by runtimes as you can.
+**Question 3.** When running `decompress`, each character that is decompressed requires traversing nodes in the Huffman coding tree, and there are $`N`$ such characters. Run your `decompress` code on the images you compressed in the previous question. Make some conclusions about the runtimes of compressed _images_ compared to compressed _text files_ when decompressing. Justify your answers by runtimes as you can.
 
 ## Submitting and Grading
 
