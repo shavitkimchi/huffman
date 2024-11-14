@@ -2,13 +2,13 @@ import java.io.File;
 
 
 public class HuffMainDecompress {
-	private final static String UNHUFF_EXTENSION = ".uhf";
+	private final static String UNHUFF_PREFIX = "UHF-";
 
 	private static String getDefaultFileName(String name) {
 		if (name.endsWith(".hf")) {
-			return name.substring(0,name.length()-3)+UNHUFF_EXTENSION;
+			return UNHUFF_PREFIX+name.substring(0,name.length()-3);
 		}
-		return name + UNHUFF_EXTENSION;
+		return UNHUFF_PREFIX+name;
 	}
 	public static void main(String[] args) {
 		
